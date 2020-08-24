@@ -8,7 +8,7 @@
 
 using namespace std;
 
-wchar_t* FindRootAppDir() 
+wchar_t* FindRootAppDir()
 {
 	wchar_t* ourDirectory = new wchar_t[MAX_PATH];
 
@@ -24,7 +24,7 @@ wchar_t* FindRootAppDir()
 	return ourDirectory;
 }
 
-wchar_t* FindOwnExecutableName() 
+wchar_t* FindOwnExecutableName()
 {
 	wchar_t* ourDirectory = new wchar_t[MAX_PATH];
 
@@ -40,10 +40,23 @@ wchar_t* FindOwnExecutableName()
 	return ret;
 }
 
-std::wstring FindLatestAppDir() 
+std::wstring FindLatestAppDir(std::wstring appName)
 {
 	std::wstring ourDir;
 	ourDir.assign(FindRootAppDir());
+
+	//If current exists, just use that
+	std::wstring currDir, currFile;
+	currDir.assign(FindRootAppDir());
+	currDir += L"\\current";
+	currFile = currDir + L"\\" + appName;;
+
+	WIN32_FIND_DATA currInfo = { 0 };
+	HANDLE currFileHandle = FindFirstFile(currFile.c_str(), &currInfo);
+	if (currFileHandle != INVALID_HANDLE_VALUE) {
+		FindClose(currFileHandle);
+		return currDir.c_str();
+	}
 
 	ourDir += L"\\app-*";
 
@@ -93,8 +106,12 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	std::wstring appName;
 	appName.assign(FindOwnExecutableName());
 
-	std::wstring workingDir(FindLatestAppDir());
+	std::wstring workingDir(FindLatestAppDir(appName));
 	std::wstring fullPath(workingDir + L"\\" + appName);
+
+	std::wstring updateFile;
+	updateFile.assign(FindRootAppDir());
+	updateFile += L"\\Update.exe";
 
 	STARTUPINFO si = { 0 };
 	PROCESS_INFORMATION pi = { 0 };
@@ -104,9 +121,12 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	si.wShowWindow = nCmdShow;
 
 	std::wstring cmdLine(L"\"");
-	cmdLine += fullPath;
-	cmdLine += L"\" ";
+	cmdLine += updateFile;
+	cmdLine += L"\" --processStart ";
+	cmdLine += appName;
+	cmdLine += L" -a=\"";
 	cmdLine += lpCmdLine;
+	cmdLine += L"\"";
 
 	wchar_t* lpCommandLine = wcsdup(cmdLine.c_str());
 	wchar_t* lpCurrentDirectory = wcsdup(workingDir.c_str());

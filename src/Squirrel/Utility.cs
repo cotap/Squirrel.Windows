@@ -24,7 +24,7 @@ namespace Squirrel
     {
         public static string RemoveByteOrderMarkerIfPresent(string content)
         {
-            return string.IsNullOrEmpty(content) ? 
+            return string.IsNullOrEmpty(content) ?
                 string.Empty : RemoveByteOrderMarkerIfPresent(Encoding.UTF8.GetBytes(content));
         }
 
@@ -341,6 +341,42 @@ namespace Squirrel
             }
         }
 
+        public static void EmptyDirectory(string path)
+        {
+            DirectoryInfo dir = new DirectoryInfo(path);
+
+            foreach (FileInfo fi in dir.GetFiles())
+            {
+                fi.Delete();
+            }
+
+            foreach (DirectoryInfo di in dir.GetDirectories())
+            {
+                EmptyDirectory(di.FullName);
+                di.Delete();
+            }
+        }
+
+
+        public static void CopyDirectory(DirectoryInfo source, DirectoryInfo target)
+        {
+            Directory.CreateDirectory(target.FullName);
+
+            // Copy each file into the new directory.
+            foreach (FileInfo fi in source.GetFiles())
+            {
+                Console.WriteLine(@"Copying {0}\{1}", target.FullName, fi.Name);
+                fi.CopyTo(Path.Combine(target.FullName, fi.Name), true);
+            }
+
+            // Copy each subdirectory using recursion.
+            foreach (DirectoryInfo diSourceSubDir in source.GetDirectories())
+            {
+                DirectoryInfo nextTargetSubDir = target.CreateSubdirectory(diSourceSubDir.Name);
+                CopyDirectory(diSourceSubDir, nextTargetSubDir);
+            }
+        }
+
         public static string FindHelperExecutable(string toFind, IEnumerable<string> additionalDirs = null)
         {
             additionalDirs = additionalDirs ?? Enumerable.Empty<string>();
@@ -420,7 +456,7 @@ namespace Squirrel
             return Path.Combine(rootAppDirectory, "app-" + version.ToString());
         }
 
-        public static string PackageDirectoryForAppDir(string rootAppDirectory) 
+        public static string PackageDirectoryForAppDir(string rootAppDirectory)
         {
             return Path.Combine(rootAppDirectory, "packages");
         }
@@ -439,7 +475,7 @@ namespace Squirrel
                 return ReleaseEntry.ParseReleaseFile(sr.ReadToEnd());
             }
         }
-            
+
         public static ReleaseEntry FindCurrentVersion(IEnumerable<ReleaseEntry> localReleases)
         {
             if (!localReleases.Any()) {
@@ -711,7 +747,7 @@ namespace Squirrel
             byte[] namespaceBytes = namespaceId.ToByteArray();
             SwapByteOrder(namespaceBytes);
 
-            // comput the hash of the name space ID concatenated with the 
+            // comput the hash of the name space ID concatenated with the
             // name (step 4)
             byte[] hash;
             using (var algorithm = SHA1.Create()) {
@@ -720,18 +756,18 @@ namespace Squirrel
                 hash = algorithm.Hash;
             }
 
-            // most bytes from the hash are copied straight to the bytes of 
+            // most bytes from the hash are copied straight to the bytes of
             // the new GUID (steps 5-7, 9, 11-12)
             var newGuid = new byte[16];
             Array.Copy(hash, 0, newGuid, 0, 16);
 
-            // set the four most significant bits (bits 12 through 15) of 
-            // the time_hi_and_version field to the appropriate 4-bit 
+            // set the four most significant bits (bits 12 through 15) of
+            // the time_hi_and_version field to the appropriate 4-bit
             // version number from Section 4.1.3 (step 8)
             newGuid[6] = (byte)((newGuid[6] & 0x0F) | (5 << 4));
 
-            // set the two most significant bits (bits 6 and 7) of the 
-            // clock_seq_hi_and_reserved to zero and one, respectively 
+            // set the two most significant bits (bits 6 and 7) of the
+            // clock_seq_hi_and_reserved to zero and one, respectively
             // (step 10)
             newGuid[8] = (byte)((newGuid[8] & 0x3F) | 0x80);
 
