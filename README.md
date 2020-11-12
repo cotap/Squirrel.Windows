@@ -1,5 +1,13 @@
+Customized Squirrel.Windows binary.
+
+Moves the latest release inside a `/current` directory so Windows firewall won't nag after every release - The user/admin can whitelist the binary under `/current/` folder and the firewall won't alert the user after every auto update.
+
+See more details in this commit:
+https://github.com/cotap/Squirrel.Windows/pull/1
+
+
 | README.md |
-|:---|
+|:---|git 
 
 ![](docs/artwork/Squirrel-Logo.png)
 
